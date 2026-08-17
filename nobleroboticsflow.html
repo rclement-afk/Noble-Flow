@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NobleRoboticsFlow — mission builder for the KIPR Wombat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   WombatFlow v3 — standalone, offline, single file.
+   Motion code generated from cleaned-up PRL/Romeo patterns.
+   Visual language adapted from RaccoonOS WebIDE DESIGN.md
+   (htl-stp-ecer, GPL-3.0).
+   ============================================================ */
+:root{
+  --rc-shell:#0A1122; --rc-bg:#0F1B31; --rc-surface:#16263F; --rc-elevated:#22375A;
+  --rc-text:#E8EEF7; --rc-muted:#A9B8CE; --rc-dim:#6B7C97;
+  --rc-accent:#E0A93F; --rc-green:#4F9D69; --rc-red:#C05B4D; --rc-blue:#5B8DD6; --rc-berry:#8E6BAE;
+  --rc-border:#263B60;
+  --rc-accent-rgb:224,169,63;
+  --rc-dot:rgba(91,141,214,.10);
+  --font-ui:"Space Grotesk",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-mono:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+}
+html.light{
+  --rc-bg:#F2F5FA; --rc-surface:#FFFFFF; --rc-elevated:#E8EEF7;
+  --rc-text:#16273F; --rc-muted:#49607F; --rc-dim:#7C8DA6;
+  --rc-border:#C9D5E6;
+  --rc-dot:rgba(18,35,65,.10);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--rc-bg);color:var(--rc-text);font-family:var(--font-ui);font-size:14px}
+.navbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  background:var(--rc-shell);border-bottom:2px solid var(--rc-accent);padding:12px 16px}
+.navbar{color:#E8EEF7}
+.logo{font-weight:700;font-size:18px;letter-spacing:-.3px}
+.logo b{color:var(--rc-accent)}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rc-border);
+  border-radius:999px;padding:4px 10px;font-size:.65rem;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:#B9C6DA}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--rc-green)}
+.togglebar{display:flex;background:var(--rc-shell);border-bottom:1px solid var(--rc-border)}
+.togglebtn{flex:1;background:none;border:none;border-bottom:2px solid transparent;
+  color:#B9C6DA;font-family:var(--font-ui);font-weight:600;font-size:13px;
+  padding:11px 6px;cursor:pointer}
+.togglebtn.active{color:var(--rc-accent);border-bottom-color:rgba(var(--rc-accent-rgb),.5)}
+main{max-width:820px;margin:0 auto;padding:16px 14px 90px}
+.card{background:var(--rc-surface);border:1px solid var(--rc-border);border-radius:12px;
+  padding:14px;margin-bottom:14px;transition:border-color .15s, box-shadow .15s}
+.card:hover{border-color:rgba(var(--rc-accent-rgb),.4);
+  box-shadow:0 0 0 1px rgba(var(--rc-accent-rgb),.08),0 8px 24px rgba(0,0,0,.4)}
+.card h3{margin:0 0 4px;font-size:.72rem;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--rc-accent)}
+.hint{font-size:12px;color:var(--rc-muted);margin:0 0 12px;line-height:1.5}
+.hint code{font-family:var(--font-mono);font-size:.7rem;color:var(--rc-text)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field label{display:block;font-size:.65rem;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--rc-dim);margin-bottom:4px}
+input[type=text],input[type=number],select{
+  width:100%;padding:9px 10px;border:1px solid var(--rc-border);border-radius:8px;
+  background:var(--rc-bg);color:var(--rc-text);font-family:var(--font-ui);font-size:14px}
+input:focus,select:focus{outline:none;border-color:var(--rc-accent);
+  box-shadow:0 0 0 3px rgba(var(--rc-accent-rgb),.12)}
+input[type=checkbox]{accent-color:var(--rc-accent);width:16px;height:16px}
+.chk{display:flex;align-items:flex-start;gap:8px;font-size:13px;padding:6px 0;color:var(--rc-muted)}
+.chk b{color:var(--rc-text)}
+.row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;padding:8px 0;
+  border-top:1px solid var(--rc-border)}
+.row.noline{border-top:none}
+.mini{display:flex;flex-direction:column}
+.mini label{font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--rc-dim);margin-bottom:3px}
+.mini input{width:96px}.mini select{width:auto;max-width:200px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rc-border);
+  border-radius:8px;padding:9px 13px;font-family:var(--font-ui);font-size:13px;font-weight:600;
+  cursor:pointer;background:var(--rc-surface);color:var(--rc-muted)}
+.btn:hover{background:var(--rc-elevated);color:var(--rc-text)}
+.navbar .btn{background:#16263F;border-color:#263B60;color:#B9C6DA}
+.navbar .btn:hover{background:#22375A;color:#E8EEF7}
+.btn.primary{background:var(--rc-accent);border-color:var(--rc-accent);color:var(--rc-shell)}
+.btn.primary:hover{background:#EDBA55;box-shadow:0 0 16px rgba(var(--rc-accent-rgb),.4)}
+.btn.run{background:var(--rc-green);border-color:var(--rc-green);color:#0A1122}
+.btn.danger:hover{color:var(--rc-red);border-color:var(--rc-red)}
+.btn.icon{padding:6px 8px}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.wide{width:100%;justify-content:center;padding:13px}
+.addzone{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;
+  border:2px dashed rgba(var(--rc-accent-rgb),.22);background:rgba(var(--rc-accent-rgb),.03);border-radius:10px;
+  padding:11px;color:var(--rc-accent);font-weight:600;font-size:13px;cursor:pointer;
+  font-family:var(--font-ui)}
+.addzone:hover{border-color:rgba(var(--rc-accent-rgb),.4)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--rc-border);
+  background:var(--rc-bg);border-radius:999px;padding:7px 13px;font-size:13px;font-weight:600;
+  color:var(--rc-muted);cursor:pointer;font-family:var(--font-ui)}
+.chip.on{border-color:var(--rc-accent);color:var(--rc-accent);
+  background:rgba(var(--rc-accent-rgb),.12);box-shadow:0 0 0 3px rgba(var(--rc-accent-rgb),.08)}
+.canvas{position:relative;padding:14px 12px 8px 40px;border:1px solid var(--rc-border);
+  border-radius:12px;margin-bottom:14px;background-color:var(--rc-bg);
+  background-image:radial-gradient(circle,var(--rc-dot) 1px,transparent 1px);
+  background-size:24px 24px}
+.canvas::before{content:"";position:absolute;left:24px;top:22px;bottom:22px;width:2px;
+  background:var(--rc-elevated)}
+.node{position:relative;background:var(--rc-surface);border-radius:10px;margin-bottom:10px;
+  border-left:4px solid var(--cat);
+  box-shadow:inset 0 0 0 1px var(--rc-border),0 4px 12px rgba(0,0,0,.35)}
+.node:focus-within{box-shadow:inset 0 0 0 2px var(--rc-accent),0 0 0 3px rgba(var(--rc-accent-rgb),.14)}
+.nodeno{position:absolute;left:-30px;top:13px;width:24px;height:24px;border-radius:50%;
+  background:var(--cat);color:#0A1122;font-size:11px;font-weight:700;display:flex;
+  align-items:center;justify-content:center;box-shadow:0 0 0 3px var(--rc-bg)}
+.nodehead{display:flex;align-items:center;gap:6px;padding:9px 8px 3px 10px}
+.nodetitle{flex:1;font-size:13px;font-weight:700}
+.nodebody{padding:0 10px 11px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.empty{text-align:center;color:var(--rc-dim);font-size:13px;padding:24px 8px}
+.palette{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pal{border:1px solid var(--rc-border);border-left:4px solid var(--cat);border-radius:8px;
+  background:var(--rc-bg);color:var(--rc-text);font-family:var(--font-ui);font-size:13px;
+  font-weight:600;text-align:left;padding:11px 10px;cursor:pointer}
+.pal:hover{border-color:rgba(var(--rc-accent-rgb),.4);background:var(--rc-surface)}
+.codewrap{background:#0A1122;border:1px solid #263B60;border-radius:12px;
+  padding:14px;overflow-x:auto}
+.code{font-family:var(--font-mono);font-size:12px;line-height:1.6;white-space:pre;
+  color:#E8EEF7}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="logo">NobleRobotics<b>Flow</b></span>
+  <span class="pill"><span class="dot"></span> Romeo-pattern motion · plain C for the KISS IDE</span>
+  <span style="flex:1"></span>
+  <button class="btn" data-act="export" title="Save project to a file">⇩ Export</button>
+  <button class="btn" data-act="importOpen" title="Load a project file or pasted code">⇧ Import</button>
+  <button class="btn" data-act="theme" id="themeBtn" title="Switch light / dark">☀ Light</button>
+</nav>
+<div class="togglebar" id="tabs"></div>
+<main id="view"></main>
+
+<div id="importModal" style="display:none;position:fixed;inset:0;background:rgba(20,15,12,.75);z-index:50;
+  align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="max-width:560px;width:100%;margin:0">
+    <h3>Import project</h3>
+    <p class="hint">Pick a <b>.wombatflow.json</b> file, or paste either the JSON <i>or any
+      generated main.c</i> — every file this tool produces carries its project data inside,
+      so old code can be re-opened here.</p>
+    <input type="file" id="importFile" accept=".json,.c,.txt,.h" style="margin-bottom:10px;color:var(--rc-muted)">
+    <textarea id="importText" rows="6" placeholder="…or paste JSON / generated C here"
+      style="width:100%;box-sizing:border-box;background:var(--rc-bg);color:var(--rc-text);
+      border:1px solid var(--rc-border);border-radius:8px;padding:9px 10px;
+      font-family:var(--font-mono);font-size:11px"></textarea>
+    <p class="hint" id="importErr" style="color:var(--rc-red);display:none;margin:8px 0 0"></p>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn primary" data-act="importGo">Load project</button>
+      <button class="btn" data-act="importClose">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================= state ================= */
+let _id = 1; const nid = () => _id++;
+const S = {
+  tab: "setup",
+  cfg: {
+    leftPort:0, rightPort:2,
+    measMode:"simple",            /* simple = wheel diameter seeds TPI | tpi = direct */
+    wheelDiamIn:2.5, ticksPerRev:1500,
+    leftTpi:188.0, rightTpi:188.0,
+    defSpeed:80,
+    axis:"z", turnFactor:8.24, corrMode:"gyro",
+    irLeft:0, irRight:1, irThresh:2200, autoCalLine:true,
+    smallPair:false, sIrLeft:2, sIrRight:3, sThresh:2000,
+    useLight:false, lightPort:5, useShutdown:false, shutdownSecs:119,
+  },
+  servos: [ { id:nid(), name:"Arm", port:0 } ],
+  sensors: [ { id:nid(), name:"ET Distance", kind:"analog", port:4, thresh:2000 } ],
+  missions: [ { id:nid(), name:"Drive to zone", steps:[] } ],
+  activeM: null,
+};
+const CAT = { drive:"var(--rc-blue)", line:"var(--rc-green)", servo:"var(--rc-accent)",
+  sensor:"var(--rc-berry)", timing:"var(--rc-green)", misc:"var(--rc-dim)" };
+const STEPS = {
+  drive:{cat:"drive",label:"Drive"},
+  turn:{cat:"drive",label:"Turn"},
+  squareUp:{cat:"line",label:"Square up on line"},
+  lineFollow:{cat:"line",label:"Line follow"},
+  stop:{cat:"drive",label:"Stop motors"},
+  servoMove:{cat:"servo",label:"Move servo"},
+  waitSensor:{cat:"sensor",label:"Wait for sensor"},
+  wait:{cat:"timing",label:"Wait"},
+  comment:{cat:"misc",label:"Comment"},
+};
+const mission = () => S.missions.find(m => m.id === S.activeM) || S.missions[0];
+const esc = (s) => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const num = (v,d=0) => { const n = typeof v === "number" ? v : parseFloat(v); return isNaN(n) ? d : n; };
+
+/* ================= render ================= */
+function render() {
+  document.getElementById("tabs").innerHTML =
+    [["setup","1 · Setup"],["missions","2 · Missions"],["code","3 · Code"]]
+    .map(([k,l]) => `<button class="togglebtn ${S.tab===k?"active":""}" data-act="tab" data-k="${k}">${l}</button>`).join("");
+  document.getElementById("view").innerHTML =
+    S.tab === "setup" ? rSetup() : S.tab === "missions" ? rMissions() : rCode();
+}
+function selOpts(list, val) { return list.map(p => `<option value="${p}" ${String(p)===String(val)?"selected":""}>${p}</option>`).join(""); }
+
+function rSetup() {
+  const c = S.cfg;
+  return `
+  <div class="card"><h3>Drive base</h3>
+    <p class="hint">Motor ports are 0–3. If a wheel spins backward when it should go forward,
+      flip that motor's plug on the Wombat — the generated code assumes forward is forward.</p>
+    <div class="grid">
+      <div class="field"><label>Left motor port</label>
+        <select data-cfg="leftPort" data-num>${selOpts([0,1,2,3], c.leftPort)}</select></div>
+      <div class="field"><label>Right motor port</label>
+        <select data-cfg="rightPort" data-num>${selOpts([0,1,2,3], c.rightPort)}</select></div>
+    </div>
+  </div>
+
+  <div class="card"><h3>Measurements</h3>
+    <p class="hint">Distances are in <b>inches</b>. TPI = motor ticks per inch of travel, per side —
+      the number that decides how far your robot really goes.</p>
+    <div class="field" style="max-width:320px"><label>Measurement mode</label>
+      <select data-cfg="measMode">
+        <option value="simple" ${c.measMode==="simple"?"selected":""}>Simple — wheel diameter estimates TPI</option>
+        <option value="tpi" ${c.measMode==="tpi"?"selected":""}>Calibrated — enter left/right TPI directly</option>
+      </select></div>
+    ${c.measMode==="simple" ? `
+    <div class="grid" style="margin-top:10px">
+      <div class="field"><label>Wheel diameter (inches)</label>
+        <input type="number" step="0.05" value="${c.wheelDiamIn}" data-cfg="wheelDiamIn" data-num></div>
+      <div class="field"><label>Ticks per wheel rev</label>
+        <input type="number" step="10" value="${c.ticksPerRev}" data-cfg="ticksPerRev" data-num></div>
+    </div>
+    <p class="hint" style="margin-top:8px">Estimated TPI: <b>${estTpi().toFixed(1)}</b> both sides.
+      When you're ready to get serious, switch to Calibrated mode — real robots usually need
+      slightly different left/right values.</p>` : `
+    <div class="grid" style="margin-top:10px">
+      <div class="field"><label>Left TPI</label>
+        <input type="number" step="0.5" value="${c.leftTpi}" data-cfg="leftTpi" data-num></div>
+      <div class="field"><label>Right TPI</label>
+        <input type="number" step="0.5" value="${c.rightTpi}" data-cfg="rightTpi" data-num></div>
+    </div>
+    <p class="hint" style="margin-top:8px">To calibrate: drive 24 inches, measure what really happened,
+      then new TPI = old TPI × (commanded ÷ actual distance).</p>`}
+    <div class="field" style="max-width:200px;margin-top:4px"><label>Default speed (%)</label>
+      <input type="number" step="5" value="${c.defSpeed}" data-cfg="defSpeed" data-num></div>
+  </div>
+
+  <div class="card"><h3>Gyro</h3>
+    <p class="hint">The generated program samples the gyro's bias at startup while the robot sits
+      still (~0.5&nbsp;s), then subtracts it from every reading — that's what makes heading
+      correction work on stock firmware.</p>
+    <div class="grid">
+      <div class="field"><label>Heading axis</label>
+        <select data-cfg="axis">
+          <option value="z" ${c.axis==="z"?"selected":""}>gyro_z (flat mount)</option>
+          <option value="y" ${c.axis==="y"?"selected":""}>gyro_y (vertical mount)</option>
+        </select></div>
+      <div class="field"><label>Gyro turn factor</label>
+        <input type="number" step="0.01" value="${c.turnFactor}" data-cfg="turnFactor" data-num></div>
+    </div>
+    <p class="hint" style="margin-top:8px">Turn factor is per-robot: if the robot turns <b>too far</b>,
+      raise it; not far enough, lower it. 8.24 is a good starting point.</p>
+    <div class="field" style="max-width:320px"><label>Straight-drive correction</label>
+      <select data-cfg="corrMode">
+        <option value="gyro" ${c.corrMode==="gyro"?"selected":""}>Gyro heading hold (Romeo pattern)</option>
+        <option value="encoder" ${c.corrMode==="encoder"?"selected":""}>Encoder sync (no gyro)</option>
+        <option value="none" ${c.corrMode==="none"?"selected":""}>None — trust the wheels</option>
+      </select></div>
+  </div>
+
+  <div class="card"><h3>Square-up line sensors</h3>
+    <p class="hint">A left/right pair of tophat sensors facing the mat. Black tape reads high:
+      the threshold is the value that means "I see the line." Read live values on the Wombat's
+      Sensors screen.</p>
+    <div class="row noline">
+      <div class="mini"><label>Left port</label>
+        <select data-cfg="irLeft" data-num>${selOpts([0,1,2,3,4,5], c.irLeft)}</select></div>
+      <div class="mini"><label>Right port</label>
+        <select data-cfg="irRight" data-num>${selOpts([0,1,2,3,4,5], c.irRight)}</select></div>
+      <div class="mini"><label>Starting midpoint</label>
+        <input type="number" step="50" value="${c.irThresh}" data-cfg="irThresh" data-num></div>
+    </div>
+    <div class="chk"><input type="checkbox" data-cfg="autoCalLine" ${c.autoCalLine?"checked":""} id="acl">
+      <label for="acl"><b>Auto-calibrate to this board</b> — samples white while sitting in the
+      start box and during the first square-up approach, samples black at the first line, then
+      uses the true midpoint of <i>this board's</i> readings from there on. Your starting
+      midpoint is only used until that first line.</label></div>
+    <div class="chk"><input type="checkbox" data-cfg="smallPair" ${c.smallPair?"checked":""} id="sp">
+      <label for="sp">Robot has a <b>second pair</b> (for chained square-ups)</label></div>
+    ${c.smallPair ? `
+    <div class="row">
+      <div class="mini"><label>2nd left port</label>
+        <select data-cfg="sIrLeft" data-num>${selOpts([0,1,2,3,4,5], c.sIrLeft)}</select></div>
+      <div class="mini"><label>2nd right port</label>
+        <select data-cfg="sIrRight" data-num>${selOpts([0,1,2,3,4,5], c.sIrRight)}</select></div>
+      <div class="mini"><label>2nd threshold</label>
+        <input type="number" step="50" value="${c.sThresh}" data-cfg="sThresh" data-num></div>
+    </div>` : ""}
+  </div>
+
+  <div class="card"><h3>Competition start</h3>
+    <div class="chk"><input type="checkbox" data-cfg="useLight" ${c.useLight?"checked":""} id="ul">
+      <label for="ul">Wait for starting light (<code>wait_for_light</code>)</label></div>
+    ${c.useLight ? `<div class="field" style="max-width:170px"><label>Light sensor port</label>
+      <select data-cfg="lightPort" data-num>${selOpts([0,1,2,3,4,5], c.lightPort)}</select></div>` : ""}
+    <div class="chk"><input type="checkbox" data-cfg="useShutdown" ${c.useShutdown?"checked":""} id="us">
+      <label for="us">Auto-stop at end of round (<code>shut_down_in</code>)</label></div>
+    ${c.useShutdown ? `<div class="field" style="max-width:170px"><label>Seconds until shutdown</label>
+      <input type="number" step="1" value="${c.shutdownSecs}" data-cfg="shutdownSecs" data-num></div>` : ""}
+  </div>
+
+  <div class="card"><h3>Servos</h3>
+    <p class="hint">Ports 0–3. Positions 0–2047 (1024 = center).</p>
+    ${S.servos.map(sv => `
+      <div class="row">
+        <div class="field" style="flex:1;min-width:120px"><label>Name</label>
+          <input type="text" value="${esc(sv.name)}" data-sv="${sv.id}" data-key="name"></div>
+        <div class="field"><label>Port</label>
+          <select data-sv="${sv.id}" data-key="port" data-num>${selOpts([0,1,2,3], sv.port)}</select></div>
+        <button class="btn icon danger" data-act="delServo" data-id="${sv.id}" aria-label="Remove servo">✕</button>
+      </div>`).join("")}
+    <button class="addzone" data-act="addServo">+ Add servo</button>
+  </div>
+
+  <div class="card"><h3>Other sensors</h3>
+    <p class="hint">Sensors for "drive until" and "wait for" blocks — ET distance, extra tophats,
+      touch/bump switches. Analog: ports 0–5 (0–4095). Digital: ports 0–9.</p>
+    ${S.sensors.map(sn => `
+      <div class="row">
+        <div class="field" style="flex:1;min-width:110px"><label>Name</label>
+          <input type="text" value="${esc(sn.name)}" data-sn="${sn.id}" data-key="name"></div>
+        <div class="field"><label>Type</label>
+          <select data-sn="${sn.id}" data-key="kind">
+            <option value="analog" ${sn.kind==="analog"?"selected":""}>analog</option>
+            <option value="digital" ${sn.kind==="digital"?"selected":""}>digital</option></select></div>
+        <div class="field"><label>Port</label>
+          <select data-sn="${sn.id}" data-key="port" data-num>
+            ${selOpts(sn.kind==="analog"?[0,1,2,3,4,5]:[0,1,2,3,4,5,6,7,8,9], sn.port)}</select></div>
+        ${sn.kind==="analog" ? `<div class="field" style="width:110px"><label>Threshold</label>
+          <input type="number" step="50" value="${sn.thresh}" data-sn="${sn.id}" data-key="thresh" data-num></div>` : ""}
+        <button class="btn icon danger" data-act="delSensor" data-id="${sn.id}" aria-label="Remove sensor">✕</button>
+      </div>`).join("")}
+    <button class="addzone" data-act="addSensor">+ Add sensor</button>
+  </div>
+
+  <button class="btn primary wide" data-act="tab" data-k="missions">Next: build missions →</button>`;
+}
+
+function estTpi() {
+  const c = S.cfg;
+  return num(c.ticksPerRev,1500) / (Math.PI * Math.max(0.1, num(c.wheelDiamIn,2.5)));
+}
+function tpiL() { return S.cfg.measMode === "simple" ? estTpi() : num(S.cfg.leftTpi,188); }
+function tpiR() { return S.cfg.measMode === "simple" ? estTpi() : num(S.cfg.rightTpi,188); }
+
+function rMissions() {
+  const m = mission();
+  return `
+  <div class="card"><h3>Missions</h3>
+    <p class="hint">Missions run one after another — split your run into readable chunks.
+      Each becomes its own C function.</p>
+    <div class="chips">
+      ${S.missions.map(x => `<button class="chip ${x.id===m.id?"on":""}" data-act="pickM" data-id="${x.id}">⚑ ${esc(x.name)} <span style="font-family:var(--font-mono);font-size:.65rem">${x.steps.length}</span></button>`).join("")}
+      <button class="chip" data-act="addM">+ New</button>
+    </div>
+    <div class="row noline">
+      <div class="field" style="flex:1"><label>Mission name</label>
+        <input type="text" value="${esc(m.name)}" data-act-input="renameM"></div>
+      <button class="btn icon danger" data-act="delM" ${S.missions.length<=1?"disabled":""} aria-label="Delete mission">✕</button>
+    </div>
+  </div>
+
+  <div class="card"><h3>Add a step to “${esc(m.name)}”</h3>
+    <div class="palette">
+      ${Object.entries(STEPS).map(([t,d]) =>
+        `<button class="pal" style="--cat:${CAT[d.cat]}" data-act="addStep" data-t="${t}">${d.label}</button>`).join("")}
+    </div>
+  </div>
+
+  ${m.steps.length === 0
+    ? `<div class="empty">This mission is empty — add steps above.</div>`
+    : `<div class="canvas">${m.steps.map((s,i) => rNode(s,i,m.steps.length)).join("")}</div>`}
+
+  <button class="btn primary wide" data-act="tab" data-k="code">Next: get the C code →</button>`;
+}
+
+function rNode(s, i, len) {
+  const d = STEPS[s.type];
+  const head = `
+    <div class="nodehead">
+      <div class="nodetitle">${d.label}</div>
+      <button class="btn icon" data-act="mv" data-i="${i}" data-d="-1" ${i===0?"disabled":""} aria-label="Move up">↑</button>
+      <button class="btn icon" data-act="mv" data-i="${i}" data-d="1" ${i===len-1?"disabled":""} aria-label="Move down">↓</button>
+      <button class="btn icon danger" data-act="delStep" data-i="${i}" aria-label="Delete">✕</button>
+    </div>`;
+  const mini = (label, inner) => `<div class="mini"><label>${label}</label>${inner}</div>`;
+  const numIn = (label, key, step="1") =>
+    mini(label, `<input type="number" step="${step}" value="${s[key]}" data-st="${i}" data-key="${key}" data-num>`);
+  const sel = (label, key, opts) =>
+    mini(label, `<select data-st="${i}" data-key="${key}">${opts.map(([v,t]) =>
+      `<option value="${v}" ${String(v)===String(s[key])?"selected":""}>${t}</option>`).join("")}</select>`);
+  const dirSel = sel("Direction","dir",[["forward","forward"],["backward","backward"]]);
+  const sensorSel = sel("Sensor","sensorId",S.sensors.map(x => [x.id, `${x.name} (${x.kind} ${x.port})`]));
+  const sn = S.sensors.find(x => x.id === +s.sensorId);
+  let body = "";
+  switch (s.type) {
+    case "drive": {
+      body = dirSel + numIn("Speed %","speed")
+        + sel("Until","until",[["distance","distance reached"],["time","time is up"],
+            ["digital","bump switch"],["analog","analog reading"],["line","black line seen"]]);
+      if (s.until === "distance") body += numIn("Inches","inches","0.25");
+      else if (s.until === "time") body += numIn("Seconds","sec","0.1");
+      else if (s.until === "digital") {
+        const dig = S.sensors.filter(x => x.kind === "digital");
+        body += dig.length
+          ? mini("Switch", `<select data-st="${i}" data-key="sensorId">${dig.map(x =>
+              `<option value="${x.id}" ${String(x.id)===String(s.sensorId)?"selected":""}>${esc(x.name)} (digital ${x.port})</option>`).join("")}</select>`)
+            + sel("Until it is","cmp",[["pressed","pressed"],["released","released"]])
+          : `<span class="hint" style="margin:0">Add a digital sensor in Setup first.</span>`;
+      } else if (s.until === "analog") {
+        const ana = S.sensors.filter(x => x.kind === "analog");
+        body += ana.length
+          ? mini("Sensor", `<select data-st="${i}" data-key="sensorId">${ana.map(x =>
+              `<option value="${x.id}" ${String(x.id)===String(s.sensorId)?"selected":""}>${esc(x.name)} (analog ${x.port})</option>`).join("")}</select>`)
+            + sel("Until value","cmp",[["above","rises above"],["below","drops below"]])
+            + numIn("Threshold","thresh","50")
+          : `<span class="hint" style="margin:0">Add an analog sensor in Setup first.</span>`;
+      } else if (s.until === "line") {
+        body += `<span class="hint" style="margin:0">Stops when either square-up sensor sees black. To align on the line afterward, add a Square up block next.</span>`;
+      }
+      break;
+    }
+    case "turn": body = sel("Direction","dir",[["left","left ↺"],["right","right ↻"]])
+      + numIn("Degrees","deg") + numIn("Speed %","speed"); break;
+    case "squareUp":
+      body = (S.cfg.smallPair ? sel("Sensor pair","pair",[["main","main pair"],["small","second pair"]]) : "")
+        + dirSel + numIn("Speed %","speed");
+      break;
+    case "lineFollow":
+      body = numIn("Inches","inches","0.25") + numIn("Speed %","speed")
+        + sensorSel + sel("Line is on my","side",[["left","left"],["right","right"]]);
+      break;
+    case "servoMove":
+      body = sel("Servo","servoId",S.servos.map(x => [x.id, `${x.name} (port ${x.port})`]))
+        + numIn("Position 0–2047","pos","16")
+        + sel("Style","mode",[["smooth","smooth (waits)"],["instant","instant (keeps going)"]]);
+      break;
+    case "waitSensor":
+      body = sensorSel + (sn && sn.kind === "digital"
+        ? sel("Until it is","cmp",[["pressed","pressed"],["released","released"]])
+        : sel("Until value","cmp",[["above","rises above"],["below","drops below"]]) + numIn("Threshold","thresh","50"));
+      break;
+    case "wait": body = numIn("Milliseconds","ms","100"); break;
+    case "comment": body = `<div class="mini" style="flex:1"><label>Text</label>
+      <input type="text" style="width:100%" value="${esc(s.text)}" data-st="${i}" data-key="text"></div>`; break;
+    case "stop": body = `<span class="hint" style="margin:0">Both drive motors stop (mav 0 + settle).</span>`; break;
+  }
+  return `<div class="node" style="--cat:${CAT[d.cat]}">
+    <div class="nodeno">${i+1}</div>${head}<div class="nodebody">${body}</div></div>`;
+}
+
+function rCode() {
+  return `
+  <div class="card"><h3>Your program in C</h3>
+    <p class="hint">Copy everything, open the KISS Web IDE on your Wombat, replace <b>main.c</b>,
+      compile, run. The robot must sit <b>still for the first half-second</b> while the gyro bias
+      is sampled. Turns too far → raise <code>TURN_FACTOR</code>; drifts sideways → raise
+      <code>CORR_DIVISOR</code>'s effect by lowering it slightly. Motion functions are cleaned-up
+      patterns from the PRL/Romeo library.</p>
+    <button class="btn run" data-act="copy" id="copybtn">⧉ Copy code</button>
+  </div>
+  <div class="codewrap"><div class="code" id="codeout">${esc(buildCode())}</div></div>`;
+}
+
+/* ================= events ================= */
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const act = b.dataset.act; const m = mission();
+  if (act === "tab") { S.tab = b.dataset.k; render(); }
+  else if (act === "addServo") { S.servos.push({ id:nid(), name:"Servo "+(S.servos.length+1), port:0 }); render(); }
+  else if (act === "delServo") { S.servos = S.servos.filter(x => x.id !== +b.dataset.id); render(); }
+  else if (act === "addSensor") { S.sensors.push({ id:nid(), name:"Sensor "+(S.sensors.length+1), kind:"analog", port:0, thresh:2000 }); render(); }
+  else if (act === "delSensor") { S.sensors = S.sensors.filter(x => x.id !== +b.dataset.id); render(); }
+  else if (act === "pickM") { S.activeM = +b.dataset.id; render(); }
+  else if (act === "addM") { const x = { id:nid(), name:"Mission "+(S.missions.length+1), steps:[] }; S.missions.push(x); S.activeM = x.id; render(); }
+  else if (act === "delM") { if (S.missions.length > 1) { S.missions = S.missions.filter(x => x.id !== m.id); S.activeM = S.missions[0].id; render(); } }
+  else if (act === "addStep") { m.steps.push(newStep(b.dataset.t)); render(); }
+  else if (act === "delStep") { m.steps.splice(+b.dataset.i, 1); render(); }
+  else if (act === "mv") { const i = +b.dataset.i, j = i + (+b.dataset.d);
+    if (j >= 0 && j < m.steps.length) { [m.steps[i], m.steps[j]] = [m.steps[j], m.steps[i]]; render(); } }
+  else if (act === "copy") { doCopy(); }
+  else if (act === "export") { doExport(); }
+  else if (act === "importOpen") { openImport(true); }
+  else if (act === "importClose") { openImport(false); }
+  else if (act === "importGo") { doImport(); }
+  else if (act === "theme") {
+    const light = document.documentElement.classList.toggle("light");
+    const b = document.getElementById("themeBtn");
+    if (b) b.textContent = light ? "☾ Dark" : "☀ Light";
+  }
+});
+
+/* ================= export / import ================= */
+function b64encode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function b64decode(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+function serialize() {
+  return JSON.stringify({ wombatflow: 1, brand: "NobleRoboticsFlow",
+    cfg: S.cfg, servos: S.servos, sensors: S.sensors, missions: S.missions });
+}
+function doExport() {
+  const name = (fName(S.missions[0]?.name || "project")) + ".wombatflow.json";
+  const blob = new Blob([serialize()], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function openImport(show) {
+  const m = document.getElementById("importModal");
+  m.style.display = show ? "flex" : "none";
+  if (show) { document.getElementById("importText").value = "";
+    document.getElementById("importErr").style.display = "none"; }
+}
+function parseProject(text) {
+  text = String(text || "").trim();
+  if (!text) return null;
+  /* raw JSON? */
+  try { const j = JSON.parse(text); if (j && j.wombatflow) return j; } catch (e) {}
+  /* embedded block in generated C */
+  const m = text.match(/(?:NRFLOW|WOMBATFLOW):([A-Za-z0-9+\/=]+)/);
+  if (m) {
+    try {
+      const j = JSON.parse(b64decode(m[1]));
+      if (j && j.wombatflow) return j;
+    } catch (e) {}
+  }
+  return null;
+}
+function migrateStep(s) {
+  /* legacy projects used three separate drive blocks */
+  if (s.type === "driveDist") return Object.assign({}, s, { type:"drive", until:"distance" });
+  if (s.type === "driveTime") return Object.assign({}, s, { type:"drive", until:"time" });
+  if (s.type === "driveUntil") {
+    const sn = S.sensors.find(x => x.id === +s.sensorId);
+    return Object.assign({}, s, { type:"drive",
+      until:(sn && sn.kind === "digital") ? "digital" : "analog" });
+  }
+  return s;
+}
+function applyProject(p) {
+  if (!p || !Array.isArray(p.missions) || !p.cfg) return false;
+  S.cfg = Object.assign({}, S.cfg, p.cfg);
+  S.servos = Array.isArray(p.servos) ? p.servos : [];
+  S.sensors = Array.isArray(p.sensors) ? p.sensors : [];
+  S.missions = p.missions.length ? p.missions : [{ id: nid(), name: "Mission 1", steps: [] }];
+  S.missions.forEach(m => { m.steps = (m.steps || []).map(migrateStep); });
+  /* keep id counter ahead of every imported id */
+  let maxId = 1;
+  const scan = (o) => { if (o && typeof o.id === "number" && o.id > maxId) maxId = o.id; };
+  S.servos.forEach(scan); S.sensors.forEach(scan);
+  S.missions.forEach(m => { scan(m); (m.steps || []).forEach(scan); });
+  _id = maxId + 1;
+  S.activeM = S.missions[0].id;
+  S.tab = "missions";
+  return true;
+}
+function doImport() {
+  const p = parseProject(document.getElementById("importText").value);
+  if (p && applyProject(p)) { openImport(false); render(); }
+  else {
+    const err = document.getElementById("importErr");
+    err.textContent = "Couldn't find a WombatFlow project in that — check it's an exported .json or a full generated main.c.";
+    err.style.display = "block";
+  }
+}
+document.addEventListener("change", (e) => {
+  if (e.target && e.target.id === "importFile" && e.target.files && e.target.files[0]) {
+    const r = new FileReader();
+    r.onload = () => { document.getElementById("importText").value = String(r.result || ""); };
+    r.readAsText(e.target.files[0]);
+  }
+});
+document.addEventListener("input", (e) => {
+  const t = e.target;
+  const val = t.type === "checkbox" ? t.checked : (t.dataset.num !== undefined ? num(t.value, "") : t.value);
+  if (t.dataset.cfg) { S.cfg[t.dataset.cfg] = val;
+    if (t.type === "checkbox" || t.tagName === "SELECT") render(); }
+  else if (t.dataset.sv) { const sv = S.servos.find(x => x.id === +t.dataset.sv); if (sv) sv[t.dataset.key] = val; }
+  else if (t.dataset.sn) { const sn = S.sensors.find(x => x.id === +t.dataset.sn); if (sn) { sn[t.dataset.key] = val;
+    if (t.dataset.key === "kind") { sn.port = 0; render(); } } }
+  else if (t.dataset.st !== undefined) { const s = mission().steps[+t.dataset.st]; if (s) { s[t.dataset.key] = val;
+    if (t.tagName === "SELECT" && (t.dataset.key === "sensorId" || t.dataset.key === "until")) render(); } }
+  else if (t.dataset.actInput === "renameM") { mission().name = t.value; }
+});
+document.addEventListener("change", (e) => {
+  if (e.target.dataset.actInput === "renameM") render();
+});
+
+function newStep(type) {
+  const d = S.cfg.defSpeed;
+  const base = {
+    drive:{ dir:"forward", speed:d, until:"distance", inches:12, sec:1.0,
+      sensorId:S.sensors[0]?.id ?? "", cmp:"above", thresh:S.sensors[0]?.thresh ?? 2000 },
+    turn:{ dir:"right", deg:90, speed:d },
+    squareUp:{ pair:"main", dir:"forward", speed:d },
+    lineFollow:{ inches:12, speed:d, sensorId:S.sensors[0]?.id ?? "", side:"left" },
+    stop:{},
+    servoMove:{ servoId:S.servos[0]?.id ?? "", pos:1024, mode:"smooth" },
+    waitSensor:{ sensorId:S.sensors[0]?.id ?? "", cmp:"above", thresh:2000 },
+    wait:{ ms:1000 },
+    comment:{ text:"…" },
+  }[type];
+  return Object.assign({ id:nid(), type }, base);
+}
+
+function doCopy() {
+  const txt = buildCode();
+  const done = () => { const b = document.getElementById("copybtn"); if (b) { b.textContent = "✓ Copied!"; setTimeout(() => b.textContent = "⧉ Copy code", 1500); } };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(done).catch(() => fallbackCopy(txt, done));
+  } else fallbackCopy(txt, done);
+}
+function fallbackCopy(txt, done) {
+  const t = document.createElement("textarea"); t.value = txt;
+  document.body.appendChild(t); t.select();
+  try { document.execCommand("copy"); } catch (e) {}
+  document.body.removeChild(t); done();
+}
+
+/* ============================================================
+   C code generator — cleaned-up PRL/Romeo motion patterns
+   ============================================================ */
+const cName = (s) => (String(s || "ITEM").toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "")) || "ITEM";
+const fName = (s) => (String(s || "mission").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "")) || "mission";
+
+function buildCode() {
+  const c = S.cfg, servos = S.servos, sensors = S.sensors, missions = S.missions;
+  const spd = (p) => Math.max(1, Math.min(1500, Math.round((num(p,70)/100)*1500)));
+  const svD = (sv) => "SERVO_" + cName(sv.name);
+  const snD = (sn) => "SENSOR_" + cName(sn.name);
+  const all = missions.flatMap(m => m.steps);
+  const has = (t) => all.some(s => s.type === t);
+  const usesServo = (has("servoMove")) && servos.length > 0;
+  const usesSmooth = all.some(s => s.type === "servoMove" && s.mode === "smooth");
+  const driveUntil = (u) => all.some(s => s.type === "drive" && s.until === u);
+  const anyDrive = has("drive") || has("turn") || has("squareUp") || has("lineFollow");
+  const irUsed = has("squareUp") || driveUntil("line");
+  const autoCal = !!c.autoCalLine && irUsed;
+  const thMain = autoCal ? "ir_thresh" : "IR_THRESH";
+  const mode = c.corrMode || "gyro";
+  const gy = mode === "gyro", enc = mode === "encoder";
+  const usesGyro = anyDrive && (gy || has("turn") || has("squareUp"));
+  const usesSmallSq = c.smallPair && all.some(s => s.type === "squareUp" && s.pair === "small");
+  const L = []; const P = (s="") => L.push(s);
+
+  /* correction snippet emitters for inline loops */
+  const corrDecl = () => gy ? "double theta = 0;" : (enc ? "/* encoder-sync correction */" : "");
+  const corrLines = (sp, ind) => {
+    if (gy) return [
+      ind + "theta += heading_rate();",
+      ind + "int corr = (int)(" + sp + " * theta / CORR_DIVISOR);",
+    ];
+    if (enc) return [
+      ind + "int corr = (int)(SYNC_KP * (gmpc(LEFT_MOTOR) - gmpc(RIGHT_MOTOR)));",
+    ];
+    return [ ind + "int corr = 0;" ];
+  };
+
+  P("#include <kipr/wombat.h>");
+  P("#include <math.h>");
+  P("#include <stdlib.h>");
+  P("");
+  P("/* ============================================================");
+  P("   Generated by NobleRoboticsFlow — paste into main.c in the KISS IDE");
+  P("   Motion functions: cleaned-up patterns from the PRL/Romeo");
+  P("   library. Mission structure inspired by RaccoonOS.");
+  P("   Uses only trusted primitives: mav, gmpc/cmpc, analog,");
+  P("   digital, servos, msleep. No mrp/bmd anywhere.");
+  P("   ============================================================ */");
+  P("");
+  P("/* ---- Hardware (edit in the Setup tab, not here) ---- */");
+  P("#define LEFT_MOTOR  " + num(c.leftPort));
+  P("#define RIGHT_MOTOR " + num(c.rightPort,2));
+  P("#define LEFT_TPI  " + tpiL().toFixed(2) + "   /* motor ticks per inch */");
+  P("#define RIGHT_TPI " + tpiR().toFixed(2));
+  if (has("squareUp") || has("lineFollow") || driveUntil("line")) {
+    P("#define IR_LEFT  " + num(c.irLeft) + "   /* square-up line sensors */");
+    P("#define IR_RIGHT " + num(c.irRight));
+    P("#define IR_THRESH " + num(c.irThresh,2200) + "  /* starting midpoint: above = black" + (autoCal ? "; auto-adapts on this board" : "") + " */");
+    if (usesSmallSq) {
+      P("#define SMALL_IR_LEFT  " + num(c.sIrLeft));
+      P("#define SMALL_IR_RIGHT " + num(c.sIrRight));
+      P("#define SMALL_IR_THRESH " + num(c.sThresh,2000));
+    }
+  }
+  if (servos.length) { servos.forEach(sv => P("#define " + svD(sv) + " " + sv.port + "  /* servo, 0..2047 */")); }
+  if (sensors.length) { sensors.forEach(sn => P("#define " + snD(sn) + " " + sn.port + "  /* " + sn.kind + (sn.kind==="analog" ? ", threshold " + num(sn.thresh,2000) : "") + " */")); }
+  P("");
+  P("/* ---- Tuning (per-robot) ---- */");
+  if (usesGyro) {
+    P("#define GYRO() gyro_" + (c.axis==="y"?"y":"z") + "()   /* heading axis */");
+    P("#define TURN_FACTOR " + num(c.turnFactor,8.24).toFixed(2) + "   /* turns too far -> raise, too short -> lower */");
+  }
+  P("#define CORR_DIVISOR 12000.0  /* drive correction strength: lower = stronger */");
+  if (enc) P("#define SYNC_KP 1.2      /* encoder-sync strength */");
+  P("#define ACCEL_STEP 75         /* how fast speed ramps up */");
+  P("#define MAX_TURN_SPEED 1050");
+  P("");
+
+  if (usesGyro) {
+    P("/* ---- Gyro bias: sampled fresh at every program start ---- */");
+    P("double gyro_bias = 0.0;");
+    P("");
+    P("double heading_rate(void) { return GYRO() - gyro_bias; }");
+    P("");
+    P("void calculate_bias(void) {");
+    P('    printf("Calibrating gyro - keep the robot STILL...\\n");');
+    P("    double sum = 0; int i;");
+    P("    for (i = 0; i < 50; i++) { sum += GYRO(); msleep(10); }");
+    P("    gyro_bias = sum / 50.0;");
+    P('    printf("Gyro bias: %.2f\\n", gyro_bias);');
+    P("}");
+    P("");
+  }
+  if (anyDrive) {
+    P("void stop_drive(void) {");
+    P("    mav(LEFT_MOTOR, 0);");
+    P("    mav(RIGHT_MOTOR, 0);");
+    P("    msleep(30);");
+    P("}");
+    P("");
+  }
+
+  if (autoCal) {
+    P("/* ---- Board line calibration ----");
+    P("   The threshold starts at the student's midpoint guess, then adapts:");
+    P("   white is sampled in the start box and on the first square-up");
+    P("   approach; black is sampled at the first line; from then on every");
+    P("   line check uses the true midpoint of THIS board's readings. */");
+    P("int ir_thresh = IR_THRESH;   /* live threshold */");
+    P("int ir_calibrated = 0;");
+    P("long white_sum = 0;");
+    P("int  white_n = 0;");
+    P("");
+    P("void sample_white_baseline(void) {  /* call while sitting on white */");
+    P("    int i;");
+    P("    for (i = 0; i < 40; i++) {");
+    P("        white_sum += analog(IR_LEFT) + analog(IR_RIGHT);");
+    P("        white_n += 2;");
+    P("        msleep(5);");
+    P("    }");
+    P('    printf("White baseline: %ld\n", white_sum / white_n);');
+    P("}");
+    P("");
+    P("void calibrate_on_black(void) {  /* call with both sensors on the line */");
+    P("    long black_sum = 0; int i;");
+    P("    for (i = 0; i < 20; i++) {");
+    P("        black_sum += analog(IR_LEFT) + analog(IR_RIGHT);");
+    P("        msleep(2);");
+    P("    }");
+    P("    int black_avg = (int)(black_sum / 40);");
+    P("    int white_avg = (int)(white_sum / (white_n ? white_n : 1));");
+    P("    if (black_avg - white_avg > 400) {  /* sanity: need real contrast */");
+    P("        ir_thresh = (white_avg + black_avg) / 2;");
+    P("        ir_calibrated = 1;");
+    P('        printf("Line calibrated: white=%d black=%d -> midpoint %d\n",');
+    P("               white_avg, black_avg, ir_thresh);");
+    P("    } else {");
+    P('        printf("Calibration skipped, low contrast (white=%d black=%d) - keeping %d\n",');
+    P("               white_avg, black_avg, ir_thresh);");
+    P("    }");
+    P("}");
+    P("");
+  }
+
+  if (driveUntil("distance")) {
+    P("/* Drive straight for inches. Negative speed = backwards.");
+    P("   Romeo pattern: accelerate -> corrected cruise -> proportional decel.");
+    P("   (Backward deceleration fixed from the original.) */");
+    P("void Drive(int speed, double inches) {");
+    P("    if (inches < 0) { inches = -inches; speed = -abs(speed); }");
+    P("    int dir = (speed >= 0) ? 1 : -1;");
+    P("    int abs_speed = abs(speed);");
+    P("    int target = (int)(inches * LEFT_TPI);");
+    P("    cmpc(LEFT_MOTOR); cmpc(RIGHT_MOTOR);");
+    if (gy) P("    double theta = 0;"); 
+    P("    int power = 0;");
+    P("    /* accelerate */");
+    P("    while (power < abs_speed && abs(gmpc(LEFT_MOTOR)) < target - 150) {");
+    P("        power += ACCEL_STEP;");
+    P("        if (power > abs_speed) power = abs_speed;");
+    P("        mav(LEFT_MOTOR, dir * power);");
+    P("        mav(RIGHT_MOTOR, dir * power);");
+    if (gy) P("        theta += heading_rate();");
+    P("        msleep(5);");
+    P("    }");
+    P("    /* cruise with correction until 150 ticks from target */");
+    P("    while (abs(gmpc(LEFT_MOTOR)) < target - 150) {");
+    corrLines("abs_speed","        ").forEach(P);
+    P("        mav(LEFT_MOTOR,  dir * abs_speed - dir * corr);");
+    P("        mav(RIGHT_MOTOR, dir * abs_speed + dir * corr);");
+    P("        msleep(5);");
+    P("    }");
+    P("    /* proportional deceleration (works forward AND backward) */");
+    P("    while (abs(gmpc(LEFT_MOTOR)) < target - 10) {");
+    P("        int ticks_left = target - abs(gmpc(LEFT_MOTOR));");
+    P("        int p = ticks_left * 30;");
+    P("        if (p > abs_speed) p = abs_speed;");
+    P("        if (p < 120) p = 120;");
+    corrLines("p","        ").forEach(P);
+    P("        mav(LEFT_MOTOR,  dir * p - dir * corr);");
+    P("        mav(RIGHT_MOTOR, dir * p + dir * corr);");
+    P("        msleep(5);");
+    P("    }");
+    P("    stop_drive();");
+    P("}");
+    P("");
+  }
+
+  if (has("turn")) {
+    P("/* Turn in place by degrees. Positive = counterclockwise (left).");
+    P("   Romeo pattern: dt-integrated gyro, fast phase then slow creep");
+    P("   for the last 5 degrees. */");
+    P("void Turn(double angle, int fast_speed) {");
+    P("    if (angle == 0) return;");
+    P("    if (fast_speed > MAX_TURN_SPEED) fast_speed = MAX_TURN_SPEED;");
+    P("    int dir = (angle >= 0) ? 1 : -1;");
+    P("    double turned = 0;");
+    P("    long prev_t = systime();");
+    P("    double prev_r = heading_rate();");
+    P("    mav(LEFT_MOTOR, -fast_speed * dir);");
+    P("    mav(RIGHT_MOTOR, fast_speed * dir);");
+    P("    while (fabs(turned) < fabs(angle) - 5.0) {");
+    P("        msleep(5);");
+    P("        long t = systime();");
+    P("        double r = heading_rate();");
+    P("        turned += ((r + prev_r) / 2.0) * ((t - prev_t) / 1000.0) / TURN_FACTOR;");
+    P("        prev_t = t; prev_r = r;");
+    P("    }");
+    P("    mav(LEFT_MOTOR, -300 * dir);");
+    P("    mav(RIGHT_MOTOR, 300 * dir);");
+    P("    while (fabs(turned) < fabs(angle)) {");
+    P("        msleep(2);");
+    P("        long t = systime();");
+    P("        double r = heading_rate();");
+    P("        turned += ((r + prev_r) / 2.0) * ((t - prev_t) / 1000.0) / TURN_FACTOR;");
+    P("        prev_t = t; prev_r = r;");
+    P("    }");
+    P("    stop_drive();");
+    P("}");
+    P("");
+  }
+
+  const emitSquareUp = (fnName_, lDef, rDef, thDef, cal) => {
+    P("/* Drive to the line and align both wheels on it. Positive speed =");
+    P("   forward, negative = backward. Romeo 3-phase pattern:");
+    P("   corrected approach -> walk each wheel onto black -> back to the edge. */");
+    P("void " + fnName_ + "(int speed) {");
+    P("    int dir = (speed >= 0) ? 1 : -1;");
+    P("    double theta = 0;");
+    P("    /* phase 1: approach until either sensor sees the line */");
+    P("    while (analog(" + lDef + ") < " + thDef + " && analog(" + rDef + ") < " + thDef + ") {");
+    if (cal) {
+      P("        if (!ir_calibrated) {  /* keep learning what white looks like */");
+      P("            white_sum += analog(" + lDef + ") + analog(" + rDef + ");");
+      P("            white_n += 2;");
+      P("        }");
+    }
+    P("        theta += heading_rate();");
+    P("        int corr = (int)(abs(speed) * theta / CORR_DIVISOR);");
+    P("        mav(LEFT_MOTOR,  speed - dir * corr);");
+    P("        mav(RIGHT_MOTOR, speed + dir * corr);");
+    P("        msleep(5);");
+    P("    }");
+    P("    /* phase 2: walk each wheel onto the line independently */");
+    P("    while (analog(" + lDef + ") < " + thDef + " || analog(" + rDef + ") < " + thDef + ") {");
+    P("        mav(LEFT_MOTOR,  (analog(" + lDef + ") > " + thDef + ") ? -250 * dir : 450 * dir);");
+    P("        mav(RIGHT_MOTOR, (analog(" + rDef + ") > " + thDef + ") ? -250 * dir : 450 * dir);");
+    P("        msleep(1);");
+    P("    }");
+    if (cal) {
+      P("    if (!ir_calibrated) calibrate_on_black();  /* both sensors on black right now */");
+    }
+    P("    msleep(20);");
+    P("    /* phase 3: ease back to the near edge for a crisp line-up */");
+    P("    while (analog(" + lDef + ") > " + thDef + " || analog(" + rDef + ") > " + thDef + ") {");
+    P("        mav(LEFT_MOTOR,  (analog(" + lDef + ") > " + thDef + ") ? -450 * dir : 250 * dir);");
+    P("        mav(RIGHT_MOTOR, (analog(" + rDef + ") > " + thDef + ") ? -450 * dir : 250 * dir);");
+    P("        msleep(1);");
+    P("    }");
+    P("    stop_drive();");
+    P("}");
+    P("");
+  };
+  if (has("squareUp")) {
+    emitSquareUp("SquareUp", "IR_LEFT", "IR_RIGHT", thMain, autoCal);
+    if (usesSmallSq) emitSquareUp("SmallSquareUp", "SMALL_IR_LEFT", "SMALL_IR_RIGHT", "SMALL_IR_THRESH", false);
+  }
+
+  if (has("lineFollow")) {
+    P("/* Proportional line follow for a distance. side: +1 = line on the");
+    P("   robot's left, -1 = on the right. center = the sensor value at");
+    P("   the line's edge (its black threshold works well). */");
+    P("void LineFollow(int speed, double inches, int sensor_port, int center, int side) {");
+    P("    cmpc(LEFT_MOTOR); cmpc(RIGHT_MOTOR);");
+    P("    int target = (int)(inches * LEFT_TPI);");
+    P("    while (abs(gmpc(LEFT_MOTOR)) < target) {");
+    P("        int err = analog(sensor_port) - center;");
+    P("        mav(LEFT_MOTOR,  speed + side * (int)(0.5 * err));");
+    P("        mav(RIGHT_MOTOR, speed - side * (int)(0.5 * err));");
+    P("        msleep(5);");
+    P("    }");
+    P("    stop_drive();");
+    P("}");
+    P("");
+  }
+
+  if (usesSmooth) {
+    P("/* Smoothly glide a servo to a position (blocks until it arrives).");
+    P("   Romeo slow_servo pattern. */");
+    P("void slow_servo(int port, int target) {");
+    P("    int pos = get_servo_position(port);");
+    P("    while (pos != target) {");
+    P("        int diff = target - pos;");
+    P("        if      (diff >  100) pos += 2;");
+    P("        else if (diff >    0) pos += 1;");
+    P("        else if (diff < -100) pos -= 2;");
+    P("        else                  pos -= 1;");
+    P("        set_servo_position(port, pos);");
+    P("        msleep(1);");
+    P("    }");
+    P("}");
+    P("");
+  }
+
+  /* ---------- missions ---------- */
+  const fns = missions.map((m, mi) => "m" + String(mi+1).padStart(2,"0") + "_" + fName(m.name));
+  missions.forEach((m, mi) => {
+    P("/* ============ Mission " + (mi+1) + ": " + m.name + " ============ */");
+    P("void " + fns[mi] + "(void) {");
+    P('    printf("Mission ' + (mi+1) + ": " + m.name.replace(/"/g,"'") + '\\n");');
+    m.steps.forEach((s, i) => {
+      const n = i + 1;
+      if (s.type === "drive") {
+        const v = spd(s.speed) * (s.dir === "backward" ? -1 : 1);
+        const d = s.dir === "backward" ? -1 : 1;
+        const holdLoop = (cond, label) => {
+          P("    /* Step " + n + ": drive " + s.dir + " until " + label + " */");
+          P("    { " + corrDecl());
+          P("      cmpc(LEFT_MOTOR); cmpc(RIGHT_MOTOR);");
+          P("      while (" + cond + ") {");
+          corrLines(String(Math.abs(v)),"          ").forEach(P);
+          P("          mav(LEFT_MOTOR,  " + v + " - " + d + " * corr);");
+          P("          mav(RIGHT_MOTOR, " + v + " + " + d + " * corr);");
+          P("          msleep(5);");
+          P("      } }");
+          P("    stop_drive();");
+        };
+        if (s.until === "distance") {
+          P("    /* Step " + n + ": drive " + s.dir + " " + num(s.inches,12) + " in */");
+          P("    Drive(" + v + ", " + num(s.inches,12).toFixed(2) + ");");
+        } else if (s.until === "time") {
+          P("    /* Step " + n + ": drive " + s.dir + " for " + num(s.sec,1) + " s */");
+          P("    { " + corrDecl());
+          P("      cmpc(LEFT_MOTOR); cmpc(RIGHT_MOTOR);");
+          P("      long end_t = systime() + " + Math.round(num(s.sec,1)*1000) + ";");
+          P("      while (systime() < end_t) {");
+          corrLines(String(Math.abs(v)),"          ").forEach(P);
+          P("          mav(LEFT_MOTOR,  " + v + " - " + d + " * corr);");
+          P("          mav(RIGHT_MOTOR, " + v + " + " + d + " * corr);");
+          P("          msleep(5);");
+          P("      } }");
+          P("    stop_drive();");
+        } else if (s.until === "line") {
+          holdLoop("analog(IR_LEFT) < " + thMain + " && analog(IR_RIGHT) < " + thMain,
+                   "a square-up sensor sees the black line");
+        } else if (s.until === "digital") {
+          const sn2 = sensors.find(x => x.id === +s.sensorId && x.kind === "digital");
+          if (!sn2) { P("    /* Step " + n + ": drive skipped - pick a digital sensor in the block */"); }
+          else {
+            const pr = s.cmp !== "released";
+            holdLoop("digital(" + snD(sn2) + ") == " + (pr ? 0 : 1),
+                     '"' + sn2.name + '" is ' + (pr ? "pressed" : "released"));
+          }
+        } else if (s.until === "analog") {
+          const sn2 = sensors.find(x => x.id === +s.sensorId && x.kind === "analog");
+          if (!sn2) { P("    /* Step " + n + ": drive skipped - pick an analog sensor in the block */"); }
+          else {
+            const ab = s.cmp !== "below";
+            const th = num(s.thresh, num(sn2.thresh,2000));
+            holdLoop("analog(" + snD(sn2) + ") " + (ab ? "<=" : ">=") + " " + th,
+                     '"' + sn2.name + '" ' + (ab ? "rises above " : "drops below ") + th);
+          }
+        }
+      } else if (s.type === "turn") {
+        const deg = num(s.deg,90) * (s.dir === "right" ? -1 : 1);  /* + = CCW/left */
+        P("    /* Step " + n + ": turn " + s.dir + " " + num(s.deg,90) + " degrees */");
+        P("    Turn(" + deg.toFixed(1) + ", " + spd(s.speed) + ");");
+      } else if (s.type === "squareUp") {
+        const fn = (s.pair === "small" && usesSmallSq) ? "SmallSquareUp" : "SquareUp";
+        const v = spd(s.speed) * (s.dir === "backward" ? -1 : 1);
+        P("    /* Step " + n + ": square up " + s.dir + " on the line (" + (s.pair === "small" ? "second" : "main") + " pair) */");
+        P("    " + fn + "(" + v + ");");
+      } else if (s.type === "lineFollow") {
+        const sn2 = sensors.find(x => x.id === +s.sensorId);
+        if (!sn2 || sn2.kind !== "analog") { P("    /* Step " + n + ": line-follow skipped - needs an analog sensor from Setup */"); return; }
+        const side = s.side === "right" ? -1 : 1;
+        P("    /* Step " + n + ': line follow ' + num(s.inches,12) + ' in using "' + sn2.name + '" (line on ' + (s.side==="right"?"right":"left") + ") */");
+        P("    LineFollow(" + spd(s.speed) + ", " + num(s.inches,12).toFixed(2) + ", " + snD(sn2) + ", " + num(sn2.thresh,2000) + ", " + side + ");");
+      } else if (s.type === "stop") {
+        P("    /* Step " + n + ": stop drive motors */");
+        P("    stop_drive();");
+      } else if (s.type === "servoMove") {
+        const sv = servos.find(x => x.id === +s.servoId);
+        if (!sv) { P("    /* Step " + n + ": servo step skipped - servo was removed in Setup */"); return; }
+        const pos = Math.max(0, Math.min(2047, num(s.pos,1024)));
+        if (s.mode === "instant") {
+          P("    /* Step " + n + ': snap servo "' + sv.name + '" to ' + pos + " (keeps going - runs while next steps execute) */");
+          P("    set_servo_position(" + svD(sv) + ", " + pos + ");");
+        } else {
+          P("    /* Step " + n + ': smoothly move servo "' + sv.name + '" to ' + pos + " */");
+          P("    slow_servo(" + svD(sv) + ", " + pos + ");");
+        }
+      } else if (s.type === "waitSensor") {
+        const sn2 = sensors.find(x => x.id === +s.sensorId);
+        if (!sn2) { P("    /* Step " + n + ": wait-for-sensor skipped - sensor was removed in Setup */"); return; }
+        if (sn2.kind === "digital") {
+          const pr = s.cmp !== "released";
+          P("    /* Step " + n + ': wait until "' + sn2.name + '" is ' + (pr ? "pressed" : "released") + " */");
+          P("    while (digital(" + snD(sn2) + ") == " + (pr ? 0 : 1) + ") { msleep(5); }");
+        } else {
+          const ab = s.cmp !== "below";
+          P("    /* Step " + n + ': wait until "' + sn2.name + '" ' + (ab ? "rises above " : "drops below ") + num(s.thresh,2000) + " */");
+          P("    while (analog(" + snD(sn2) + ") " + (ab ? "<=" : ">=") + " " + num(s.thresh,2000) + ") { msleep(5); }");
+        }
+      } else if (s.type === "wait") {
+        P("    /* Step " + n + ": wait " + num(s.ms,1000) + " ms */");
+        P("    msleep(" + num(s.ms,1000) + ");");
+      } else if (s.type === "comment") {
+        P("    /* " + String(s.text || "").replace(/\*\//g, "* /") + " */");
+      }
+    });
+    if (m.steps.length === 0) P("    /* (no steps yet) */");
+    P("}");
+    P("");
+  });
+
+  P("int main() {");
+  P('    printf("Program start\\n");');
+  if (usesGyro) P("    calculate_bias();   /* robot must be STILL */");
+  if (autoCal) P("    sample_white_baseline();  /* robot sitting on white in the start box */");
+  if (usesServo) P("    enable_servos();");
+  if (c.useLight) P("    wait_for_light(" + num(c.lightPort) + ");  /* competition start */");
+  if (c.useShutdown) P("    shut_down_in(" + num(c.shutdownSecs,119) + ");  /* auto-stop at end of round */");
+  P("");
+  fns.forEach(fn => P("    " + fn + "();"));
+  P("");
+  if (anyDrive) P("    stop_drive();");
+  if (usesServo) P("    disable_servos();");
+  P('    printf("Program done\\n");');
+  P("    return 0;");
+  P("}");
+  P("");
+  P("/* ============================================================");
+  P("   NOBLEROBOTICSFLOW PROJECT DATA - do not edit this block.");
+  P("   Paste this whole file back into NobleRoboticsFlow (Import) to");
+  P("   re-open and continue editing this project.");
+  P("   NRFLOW:" + b64encode(serialize()));
+  P("   ============================================================ */");
+  return L.join("\n");
+}
+
+render();
+</script>
+</body>
+</html>
